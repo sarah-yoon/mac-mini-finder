@@ -24,6 +24,11 @@ const CONFIG = {
     cdw: 'https://www.cdw.com/product/apple-mac-mini-m4-10-core-cpu-10-core-gpu-16-gb-ram-256-gb-ssd/8131050',
     amazonRenewed: 'https://www.amazon.com/Apple-10-Core-Storage-Silver-Renewed/dp/B0DTPPBN95',
     quickship: 'https://quickshipelectronics.com/products/apple-mac-mini-desktop-m4-chip-16gb-memory-256gb-ssd-silver-mu9d3ll-a-2024',
+    dataVision: 'https://datavision.com/products/apple-mac-mini-apple-m4-chip-with-10c-cpu-10c-gpu-256gb-ssd-16gb-memory-mu9d3ll-a-fall-2024',
+    nfm: 'https://www.nfm.com/apple-mac-mini-desktop---m4-chip---10-core---16gb-memory---256gb-ssd-in-silver-latest-model-67392910/67392910.html',
+    brandsmart: 'https://www.brandsmartusa.com/apple/267668/mac-mini-m4-10cp-16gb-256gb.htm',
+    connection: 'https://www.connection.com/product/apple-mac-mini-apple-m4-chip-with-10-core-cpu-and-10-core-gpu-16gb-256gb-ssd/mu9d3ll-a/41853326',
+    bestBuyOpenBox: 'https://www.bestbuy.com/product/apple-mac-mini-desktop-latest-model-m4-chip-built-for-apple-intelligence-16gb-memory-256gb-ssd-silver/JJGCQXH2S4/sku/6566918/openbox?condition=fair',
   },
 };
 
@@ -208,6 +213,41 @@ const checks = [
     inPatterns: [/add to cart/i, /in stock/i],
     outPatterns: [/sold out/i, /out of stock/i],
     pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'DataVision', fn: () => checkGeneric({
+    retailer: 'DataVision',
+    url: CONFIG.targets.dataVision,
+    inPatterns: [/add to cart/i, /"available":\s*true/i],
+    outPatterns: [/sold out/i, /out of stock/i, /"available":\s*false/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'NFM', fn: () => checkGeneric({
+    retailer: 'Nebraska Furniture Mart',
+    url: CONFIG.targets.nfm,
+    inPatterns: [/add to cart/i, /in stock/i],
+    outPatterns: [/out of stock/i, /sold out/i, /currently unavailable/i, /back in stock notification/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'BrandsMart', fn: () => checkGeneric({
+    retailer: 'BrandsMart USA',
+    url: CONFIG.targets.brandsmart,
+    inPatterns: [/add to cart/i, /in stock/i],
+    outPatterns: [/out of stock/i, /sold out/i, /unavailable/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'Connection', fn: () => checkGeneric({
+    retailer: 'Connection',
+    url: CONFIG.targets.connection,
+    inPatterns: [/add to cart/i, /in stock/i],
+    outPatterns: [/Temporarily Out-of-Stock/i, /availabilityNoStockStatus/i, /Out of Stock/i, /Backordered/i, /call for availability/i, /currently unavailable/i, /Connect with Account Team/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'Best Buy Open-Box', fn: () => checkGeneric({
+    retailer: 'Best Buy Open-Box',
+    url: CONFIG.targets.bestBuyOpenBox,
+    inPatterns: [/"buttonState":\s*"ADD_TO_CART"/, /add to cart/i],
+    outPatterns: [/sold out/i, /no open-box available/i, /"buttonState":\s*"SOLD_OUT"/, /not available/i],
+    pricePattern: /"currentPrice":\s*([0-9.]+)/,
   })},
 ];
 

@@ -32,9 +32,9 @@ async function fetchText(url) {
 }
 
 async function checkAppleRetailPickup() {
-  const url = `https://www.apple.com/shop/fulfillment-messages?pl=true&mts.0=regular&parts.0=${encodeURIComponent(CONFIG.applePartNumber)}&location=${CONFIG.zipCode}`;
+  const url = `https://www.apple.com/shop/retail/pickup-message?parts.0=${encodeURIComponent(CONFIG.applePartNumber)}&location=${CONFIG.zipCode}`;
   const data = JSON.parse(await fetchText(url));
-  const stores = data?.body?.content?.pickupMessage?.stores ?? [];
+  const stores = data?.body?.stores ?? [];
   const available = stores.filter(
     s => s.partsAvailability?.[CONFIG.applePartNumber]?.pickupDisplay === 'available'
   );
@@ -83,57 +83,57 @@ async function checkGeneric({ retailer, url, inPatterns, outPatterns, pricePatte
 }
 
 const checks = [
-  checkAppleRetailPickup,
-  checkAppleRefurb,
-  () => checkGeneric({
+  { name: 'Apple Store Pickup', fn: checkAppleRetailPickup },
+  { name: 'Apple Refurb', fn: checkAppleRefurb },
+  { name: 'B&H', fn: () => checkGeneric({
     retailer: 'B&H',
     url: CONFIG.targets.bh,
     inPatterns: [/add to cart/i, /"inStock":\s*true/],
     outPatterns: [/notify when available/i, /temporarily out of stock/i, /no longer available/i],
     pricePattern: /\$([0-9]+(?:\.[0-9]{2})?)/,
-  }),
-  () => checkGeneric({
+  })},
+  { name: 'Adorama', fn: () => checkGeneric({
     retailer: 'Adorama',
     url: CONFIG.targets.adorama,
     inPatterns: [/add to cart/i],
     outPatterns: [/out of stock/i, /notify me/i, /backorder/i],
     pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
-  }),
-  () => checkGeneric({
+  })},
+  { name: 'Expercom', fn: () => checkGeneric({
     retailer: 'Expercom',
     url: CONFIG.targets.expercom,
     inPatterns: [/add to cart/i, /in stock/i],
     outPatterns: [/out of stock/i, /unavailable/i, /backordered/i],
     pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
-  }),
-  () => checkGeneric({
+  })},
+  { name: 'Best Buy', fn: () => checkGeneric({
     retailer: 'Best Buy',
     url: CONFIG.targets.bestBuy,
     inPatterns: [/"buttonState":\s*"ADD_TO_CART"/, /add to cart/i],
     outPatterns: [/sold out/i, /coming soon/i, /"buttonState":\s*"SOLD_OUT"/],
     pricePattern: /"currentPrice":\s*([0-9.]+)/,
-  }),
-  () => checkGeneric({
+  })},
+  { name: 'Abt', fn: () => checkGeneric({
     retailer: 'Abt',
     url: CONFIG.targets.abt,
     inPatterns: [/add to cart/i, /in stock/i],
     outPatterns: [/out of stock/i, /notify me/i],
     pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
-  }),
-  () => checkGeneric({
+  })},
+  { name: 'Micro Center', fn: () => checkGeneric({
     retailer: 'Micro Center',
     url: CONFIG.targets.microCenter,
     inPatterns: [/add to cart/i, /in stock/i],
     outPatterns: [/sold out/i, /out of stock/i],
     pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
-  }),
-  () => checkGeneric({
+  })},
+  { name: 'Costco', fn: () => checkGeneric({
     retailer: 'Costco',
     url: CONFIG.targets.costco,
     inPatterns: [/add to cart/i],
     outPatterns: [/out of stock/i, /sold out online/i],
     pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
-  }),
+  })},
 ];
 
 async function postDiscord(content) {
@@ -149,9 +149,11 @@ async function postDiscord(content) {
   if (!res.ok) console.error('Discord post failed:', res.status, await res.text());
 }
 
-const results = await Promise.allSettled(checks.map(c => c()));
-const rows = results.map(r =>
-  r.status === 'fulfilled' ? r.value : { retailer: '?', inStock: false, error: r.reason?.message }
+const results = await Promise.allSettled(checks.map(c => c.fn()));
+const rows = results.map((r, i) =>
+  r.status === 'fulfilled'
+    ? r.value
+    : { retailer: checks[i].name, inStock: false, error: r.reason?.message }
 );
 
 console.log(new Date().toISOString());

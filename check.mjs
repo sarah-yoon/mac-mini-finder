@@ -18,6 +18,12 @@ const CONFIG = {
     costco: 'https://www.costco.com/p/-/mac-mini-desktop-computer-apple-m4-chip-built-for-apple-intelligence-10-core-cpu-10-core-gpu-16gb-memory-256gb-ssd-storage/4000225148',
     walmart: 'https://www.walmart.com/ip/Apple-Mac-mini-Apple-M4-chip-with-10C-CPU-10C-GPU-256GB-SSD-16GB-Memory-MU9D3LL-A-Fall-2024/13715211330',
     amazon: 'https://www.amazon.com/dp/B0DLBX4B1K',
+    appleEducation: 'https://www.apple.com/us-edu/shop/buy-mac/mac-mini/m4-chip-10-core-cpu-10-core-gpu-16gb-memory-256gb-storage',
+    appleRefurbSku: 'https://www.apple.com/shop/product/fu9d3ll/a/Refurbished-Mac-mini-Apple-M4-Chip-with-10-Core-CPU-and-10-Core-GPU-Gigabit-Ethernet-',
+    smallDog: 'https://smalldog.com/products/mac-mini-m4-10-core-cpu-and-10-core-gpu',
+    cdw: 'https://www.cdw.com/product/apple-mac-mini-m4-10-core-cpu-10-core-gpu-16-gb-ram-256-gb-ssd/8131050',
+    amazonRenewed: 'https://www.amazon.com/Apple-10-Core-Storage-Silver-Renewed/dp/B0DTPPBN95',
+    quickship: 'https://quickshipelectronics.com/products/apple-mac-mini-desktop-m4-chip-16gb-memory-256gb-ssd-silver-mu9d3ll-a-2024',
   },
 };
 
@@ -160,6 +166,48 @@ const checks = [
     inPatterns: [/id="availability"[^>]*>[\s\S]{0,200}In Stock/, /"availability":\s*"InStock"/, /#007600[^>]*>\s*In Stock/],
     outPatterns: [/Currently unavailable/i, /Temporarily out of stock/i, /We don't know when/i, /"availability":\s*"OutOfStock"/],
     pricePattern: /class="a-offscreen">\$([0-9,]+\.[0-9]{2})/,
+  })},
+  { name: 'Apple Education', fn: () => checkGeneric({
+    retailer: 'Apple Education',
+    url: CONFIG.targets.appleEducation,
+    inPatterns: [/Add to Bag/i, /addToCart/i, /"availability":\s*"available"/i],
+    outPatterns: [/Currently unavailable/i, /sold out/i, /"availability":\s*"unavailable"/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'Apple Refurb SKU', fn: () => checkGeneric({
+    retailer: 'Apple Refurb SKU',
+    url: CONFIG.targets.appleRefurbSku,
+    inPatterns: [/Add to Bag/i, /Add to Cart/i],
+    outPatterns: [/Currently unavailable/i, /sold out/i, /Notify when available/i, /no longer available/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'Small Dog', fn: () => checkGeneric({
+    retailer: 'Small Dog',
+    url: CONFIG.targets.smallDog,
+    inPatterns: [/add to cart/i, /in stock/i, /"available":\s*true/i],
+    outPatterns: [/sold out/i, /out of stock/i, /unavailable/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'CDW', fn: () => checkGeneric({
+    retailer: 'CDW',
+    url: CONFIG.targets.cdw,
+    inPatterns: [/add to cart/i],
+    outPatterns: [/Backordered/i, /Back In Stock Notification/i, /We'll send a notification/i, /out of stock/i, /call for availability/i, /no longer available/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'Amazon Renewed', fn: () => checkGeneric({
+    retailer: 'Amazon Renewed',
+    url: CONFIG.targets.amazonRenewed,
+    inPatterns: [/id="availability"[^>]*>[\s\S]{0,200}In Stock/, /"availability":\s*"InStock"/],
+    outPatterns: [/Currently unavailable/i, /Temporarily out of stock/i, /"availability":\s*"OutOfStock"/],
+    pricePattern: /class="a-offscreen">\$([0-9,]+\.[0-9]{2})/,
+  })},
+  { name: 'Quickship', fn: () => checkGeneric({
+    retailer: 'Quickship',
+    url: CONFIG.targets.quickship,
+    inPatterns: [/add to cart/i, /in stock/i],
+    outPatterns: [/sold out/i, /out of stock/i],
+    pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
   })},
 ];
 

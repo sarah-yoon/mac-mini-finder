@@ -1,0 +1,11 @@
+{
+  "name": "macmini-hunter",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "check": "node check.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -9,26 +9,39 @@ const CONFIG = {
   // Third-party retailer product URLs. Paste the exact 16GB/256GB M4 product page.
   // Leave blank to skip a retailer.
   targets: {
-    bh: '',          // bhphotovideo.com — search "Mac mini M4 16GB 256GB"
-    adorama: '',     // adorama.com
-    expercom: '',    // expercom.com
-    bestBuy: '',     // bestbuy.com
-    abt: '',         // abt.com
-    microCenter: '', // microcenter.com (Tustin store URL if you want store-specific)
-    costco: '',      // costco.com — requires membership, may block
+    bh: 'https://www.bhphotovideo.com/c/product/1859258-REG/apple_mu9d3ll_a_mac_mini_m4_10c_10cgpu_16gb_256gb.html',
+    adorama: 'https://www.adorama.com/acmnm424.html',
+    expercom: 'https://expercom.com/products/mac-mini-with-m4',
+    bestBuy: 'https://www.bestbuy.com/product/apple-mac-mini-desktop-latest-model-m4-chip-built-for-apple-intelligence-16gb-memory-256gb-ssd-silver/JJGCQXH2S4',
+    abt: 'https://www.abt.com/Apple-Mac-mini-Desktop-M4-Chip-16GB-RAM-256GB-SSD-Late-2024-MU9D3LLA/p/214466.html',
+    microCenter: 'https://www.microcenter.com/product/688173/apple-mac-mini-mu9d3ll-a-%28late-2024%29-desktop-computer',
+    costco: 'https://www.costco.com/p/-/mac-mini-desktop-computer-apple-m4-chip-built-for-apple-intelligence-10-core-cpu-10-core-gpu-16gb-memory-256gb-ssd-storage/4000225148',
+    walmart: 'https://www.walmart.com/ip/Apple-Mac-mini-Apple-M4-chip-with-10C-CPU-10C-GPU-256GB-SSD-16GB-Memory-MU9D3LL-A-Fall-2024/13715211330',
+    amazon: 'https://www.amazon.com/dp/B0DLBX4B1K',
   },
 };
 
 const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15';
 
-async function fetchText(url) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9' },
-    redirect: 'follow',
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.text();
+async function fetchText(url, timeoutMs = 40000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': UA,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'follow',
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function checkAppleRetailPickup() {
@@ -130,9 +143,23 @@ const checks = [
   { name: 'Costco', fn: () => checkGeneric({
     retailer: 'Costco',
     url: CONFIG.targets.costco,
-    inPatterns: [/add to cart/i],
-    outPatterns: [/out of stock/i, /sold out online/i],
+    inPatterns: [/add to cart/i, /add item/i, /"in_stock":\s*true/i, /buy now/i],
+    outPatterns: [/out of stock/i, /sold out online/i, /"out_of_stock":\s*true/i, /no longer available/i],
     pricePattern: /\$([0-9,]+(?:\.[0-9]{2})?)/,
+  })},
+  { name: 'Walmart', fn: () => checkGeneric({
+    retailer: 'Walmart',
+    url: CONFIG.targets.walmart,
+    inPatterns: [/"availabilityStatus":\s*"IN_STOCK"/, /"availability_status":\s*"IN_STOCK"/],
+    outPatterns: [/"availabilityStatus":\s*"OUT_OF_STOCK"/, /Out of stock/i, /This item is out of stock/i],
+    pricePattern: /"currentPrice":\s*\{\s*"price":\s*([0-9.]+)/,
+  })},
+  { name: 'Amazon', fn: () => checkGeneric({
+    retailer: 'Amazon',
+    url: CONFIG.targets.amazon,
+    inPatterns: [/id="availability"[^>]*>[\s\S]{0,200}In Stock/, /"availability":\s*"InStock"/, /#007600[^>]*>\s*In Stock/],
+    outPatterns: [/Currently unavailable/i, /Temporarily out of stock/i, /We don't know when/i, /"availability":\s*"OutOfStock"/],
+    pricePattern: /class="a-offscreen">\$([0-9,]+\.[0-9]{2})/,
   })},
 ];
 
